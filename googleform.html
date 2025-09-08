@@ -47,7 +47,20 @@
     }
 
     #adminBtn {
-      display: none; /* Hidden admin login button */
+      display: none; /* Hidden admin login button (only visible if needed) */
+    }
+
+    /* Small hidden button for mobile users */
+    #mobileAdminBtn {
+      position: fixed;
+      bottom: 10px;
+      right: 10px;
+      padding: 5px 10px;
+      font-size: 10px;
+      border-radius: 6px;
+      background: transparent;
+      color: transparent;
+      border: none;
     }
 
     #votingPage img {
@@ -88,17 +101,17 @@
     <h2>Select One Boy and One Girl</h2>
     <div>
       <h3>Boys</h3>
-      <label><input type="radio" name="boy" value="Boy1"><br><img src="https://via.placeholder.com/120x120?text=Boy1"></label>
-      <label><input type="radio" name="boy" value="Boy2"><br><img src="https://via.placeholder.com/120x120?text=Boy2"></label>
-      <label><input type="radio" name="boy" value="Boy3"><br><img src="https://via.placeholder.com/120x120?text=Boy3"></label>
-      <label><input type="radio" name="boy" value="Boy4"><br><img src="https://via.placeholder.com/120x120?text=Boy4"></label>
+      <label><input type="radio" name="boy" value="Boy1"><br><img src="images/boy1.png" alt="Boy1"></label>
+      <label><input type="radio" name="boy" value="Boy2"><br><img src="images/boy2.png" alt="Boy2"></label>
+      <label><input type="radio" name="boy" value="Boy3"><br><img src="images/boy3.png" alt="Boy3"></label>
+      <label><input type="radio" name="boy" value="Boy4"><br><img src="images/boy4.png" alt="Boy4"></label>
     </div>
     <div>
       <h3>Girls</h3>
-      <label><input type="radio" name="girl" value="Girl1"><br><img src="https://via.placeholder.com/120x120?text=Girl1"></label>
-      <label><input type="radio" name="girl" value="Girl2"><br><img src="https://via.placeholder.com/120x120?text=Girl2"></label>
-      <label><input type="radio" name="girl" value="Girl3"><br><img src="https://via.placeholder.com/120x120?text=Girl3"></label>
-      <label><input type="radio" name="girl" value="Girl4"><br><img src="https://via.placeholder.com/120x120?text=Girl4"></label>
+      <label><input type="radio" name="girl" value="Girl1"><br><img src="images/girl1.png" alt="Girl1"></label>
+      <label><input type="radio" name="girl" value="Girl2"><br><img src="images/girl2.png" alt="Girl2"></label>
+      <label><input type="radio" name="girl" value="Girl3"><br><img src="images/girl3.png" alt="Girl3"></label>
+      <label><input type="radio" name="girl" value="Girl4"><br><img src="images/girl4.png" alt="Girl4"></label>
     </div>
     <br>
     <button onclick="submitVote()">Submit Vote</button>
@@ -127,8 +140,12 @@
     <button onclick="goHome()">Go Home</button>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <!-- Hidden mobile admin button -->
+  <button id="mobileAdminBtn" onclick="openAdminLogin()">.</button>
+
+  <!-- Latest stable Chart.js & XLSX -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script>
     let votes = JSON.parse(localStorage.getItem("votes")) || {
       Boy1: 0, Boy2: 0, Boy3: 0, Boy4: 0,
@@ -139,8 +156,8 @@
     let chart;
 
     function login() {
-      let email = document.getElementById("email").value.trim();
-      let gmailPattern = /^[a-zA-Z0-9._%+-]+@gmail\.com$/i;
+      let email = document.getElementById("email").value.trim().toLowerCase();
+      let gmailPattern = /^[a-z0-9._%+-]+@gmail\.com$/;
 
       if (!gmailPattern.test(email)) {
         alert("Please enter a valid Gmail address (example: name@gmail.com)");
@@ -148,12 +165,12 @@
       }
 
       let usedEmails = JSON.parse(localStorage.getItem("usedEmails")) || [];
-      if (usedEmails.includes(email.toLowerCase())) {
+      if (usedEmails.includes(email)) {
         alert("This Gmail ID has already been used to vote!");
         return;
       }
 
-      localStorage.setItem("currentEmail", email.toLowerCase());
+      localStorage.setItem("currentEmail", email);
       document.getElementById("loginPage").classList.remove("active");
       document.getElementById("votingPage").classList.add("active");
     }
@@ -174,7 +191,7 @@
 
       let email = localStorage.getItem("currentEmail");
       let usedEmails = JSON.parse(localStorage.getItem("usedEmails")) || [];
-      usedEmails.push(email.toLowerCase());
+      usedEmails.push(email);
       localStorage.setItem("usedEmails", JSON.stringify(usedEmails));
 
       // Save detailed vote
