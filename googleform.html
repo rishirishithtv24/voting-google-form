@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Elections Voting</title>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+    }
+    body {
+      font-family: 'Bookman Old Style', serif;
+      text-align: center;
+      background: linear-gradient(135deg, red, black);
+      background-attachment: fixed;
+      background-size: cover;
+      color: white;
+    }
+    .page { display: none; }
+    .page.active { display: block; }
+
+    .box {
+      display: inline-block;
+      padding: 30px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      margin-top: 20px;
+      box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+    }
+
+    h1.main-heading {
+      font-size: 3.5em;
+      font-weight: bold;
+      color: yellow;
+      text-shadow: 3px 3px 8px black, 0 0 25px white, 0 0 5px orange;
+      margin-bottom: 20px;
+    }
+
+    button {
+      padding: 10px 20px;
+      border-radius: 12px;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+      background: green;
+      color: white;
+    }
+
+    #adminBtn {
+      display: none; /* Hidden admin login button */
+    }
+
+    #votingPage img {
+      width: 120px;
+      height: 120px;
+      border-radius: 15px;
+      margin: 10px;
+      cursor: pointer;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    #votingPage img:hover {
+      transform: scale(1.1) rotate(-2deg);
+      box-shadow: 0 0 20px yellow;
+    }
+    #votingPage label {
+      display: inline-block;
+      margin: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Login Page -->
+  <div id="loginPage" class="page active">
+    <h1 class="main-heading">ELECTIONS</h1>
+    <div class="box">
+      <h2>Enter Your Gmail to Vote</h2>
+      <input type="email" id="email" placeholder="Enter Gmail" required>
+      <br><br>
+      <button onclick="login()">Next</button>
+      <br><br>
+      <button id="adminBtn" onclick="openAdminLogin()">Admin Login</button>
+    </div>
+  </div>
+
+  <!-- Voting Page -->
+  <div id="votingPage" class="page">
+    <h2>Select One Boy and One Girl</h2>
+    <div>
+      <h3>Boys</h3>
+      <label><input type="radio" name="boy" value="Boy1"><br><img src="https://via.placeholder.com/120x120?text=Boy1"></label>
+      <label><input type="radio" name="boy" value="Boy2"><br><img src="https://via.placeholder.com/120x120?text=Boy2"></label>
+      <label><input type="radio" name="boy" value="Boy3"><br><img src="https://via.placeholder.com/120x120?text=Boy3"></label>
+      <label><input type="radio" name="boy" value="Boy4"><br><img src="https://via.placeholder.com/120x120?text=Boy4"></label>
+    </div>
+    <div>
+      <h3>Girls</h3>
+      <label><input type="radio" name="girl" value="Girl1"><br><img src="https://via.placeholder.com/120x120?text=Girl1"></label>
+      <label><input type="radio" name="girl" value="Girl2"><br><img src="https://via.placeholder.com/120x120?text=Girl2"></label>
+      <label><input type="radio" name="girl" value="Girl3"><br><img src="https://via.placeholder.com/120x120?text=Girl3"></label>
+      <label><input type="radio" name="girl" value="Girl4"><br><img src="https://via.placeholder.com/120x120?text=Girl4"></label>
+    </div>
+    <br>
+    <button onclick="submitVote()">Submit Vote</button>
+  </div>
+
+  <!-- Admin Login Page -->
+  <div id="adminLoginPage" class="page">
+    <div class="box">
+      <h2>Admin Login</h2>
+      <input type="password" id="adminPass" placeholder="Enter Admin Password">
+      <br><br>
+      <button onclick="checkAdmin()">Login</button>
+    </div>
+  </div>
+
+  <!-- Admin Results Page -->
+  <div id="adminPage" class="page">
+    <h2>Voting Results</h2>
+    <canvas id="resultsChart" width="400" height="200"></canvas>
+    <h3 id="highestVote"></h3>
+    <br>
+    <button onclick="clearVotes()">Clear All Votes</button>
+    <br><br>
+    <button onclick="goHome()">Go Home</button>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    let votes = JSON.parse(localStorage.getItem("votes")) || {
+      Boy1: 0, Boy2: 0, Boy3: 0, Boy4: 0,
+      Girl1: 0, Girl2: 0, Girl3: 0, Girl4: 0
+    };
+
+    let chart;
+
+    function login() {
+      let email = document.getElementById("email").value.trim();
+      let gmailPattern = /^[a-zA-Z0-9._%+-]+@gmail\.com$/i;
+
+      if (!gmailPattern.test(email)) {
+        alert("Please enter a valid Gmail address (example: name@gmail.com)");
+        return;
+      }
+
+      let usedEmails = JSON.parse(localStorage.getItem("usedEmails")) || [];
+
+      if (usedEmails.includes(email.toLowerCase())) {
+        alert("This Gmail ID has already been used to vote!");
+        return;
+      }
+
+      localStorage.setItem("currentEmail", email.toLowerCase());
+
+      document.getElementById("loginPage").classList.remove("active");
+      document.getElementById("votingPage").classList.add("active");
+    }
+
+    function submitVote() {
+      let boyVote = document.querySelector('input[name="boy"]:checked');
+      let girlVote = document.querySelector('input[name="girl"]:checked');
+
+      if (!boyVote || !girlVote) {
+        alert("Please select one boy and one girl before submitting.");
+        return;
+      }
+
+      votes[boyVote.value]++;
+      votes[girlVote.value]++;
+
+      localStorage.setItem("votes", JSON.stringify(votes));
+
+      let email = localStorage.getItem("currentEmail");
+      let usedEmails = JSON.parse(localStorage.getItem("usedEmails")) || [];
+      usedEmails.push(email.toLowerCase());
+      localStorage.setItem("usedEmails", JSON.stringify(usedEmails));
+
+      alert("Your vote has been submitted successfully!");
+
+      document.querySelectorAll('input[type="radio"]').forEach(r => r.checked = false);
+
+      document.getElementById("votingPage").classList.remove("active");
+      document.getElementById("loginPage").classList.add("active");
+    }
+
+    function openAdminLogin() {
+      document.getElementById("loginPage").classList.remove("active");
+      document.getElementById("adminLoginPage").classList.add("active");
+    }
+
+    function checkAdmin() {
+      let pass = document.getElementById("adminPass").value;
+      if (pass === "admin123") {
+        document.getElementById("adminLoginPage").classList.remove("active");
+        document.getElementById("adminPage").classList.add("active");
+        showResults();
+      } else {
+        alert("Incorrect password!");
+      }
+    }
+
+    function showResults() {
+      let ctx = document.getElementById("resultsChart").getContext("2d");
+      if (chart) chart.destroy();
+
+      chart = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: Object.keys(votes),
+          datasets: [{
+            label: "Votes",
+            data: Object.values(votes),
+            backgroundColor: ["red","blue","green","purple","pink","orange","yellow","cyan"]
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: false }
+          }
+        }
+      });
+
+      let maxVotes = Math.max(...Object.values(votes));
+      let winners = Object.keys(votes).filter(k => votes[k] === maxVotes);
+      document.getElementById("highestVote").innerText =
+        "Highest Votes: " + winners.join(", ") + " (" + maxVotes + ")";
+    }
+
+    function clearVotes() {
+      if (confirm("Are you sure you want to clear all votes?")) {
+        votes = { Boy1:0, Boy2:0, Boy3:0, Boy4:0, Girl1:0, Girl2:0, Girl3:0, Girl4:0 };
+        localStorage.setItem("votes", JSON.stringify(votes));
+        localStorage.removeItem("usedEmails");
+        showResults();
+        alert("All votes cleared!");
+      }
+    }
+
+    function goHome() {
+      document.getElementById("adminPage").classList.remove("active");
+      document.getElementById("loginPage").classList.add("active");
+    }
+
+    // Shortcut to open admin login (Ctrl + Shift + A)
+    document.addEventListener("keydown", function(e) {
+      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'a') {
+        document.getElementById("loginPage").classList.remove("active");
+        document.getElementById("adminLoginPage").classList.add("active");
+      }
+    });
+  </script>
+</body>
+</html>
