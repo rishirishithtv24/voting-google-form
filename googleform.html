@@ -120,18 +120,22 @@
     <canvas id="resultsChart" width="400" height="200"></canvas>
     <h3 id="highestVote"></h3>
     <br>
+    <button onclick="downloadExcel()">Download Excel</button>
+    <br><br>
     <button onclick="clearVotes()">Clear All Votes</button>
     <br><br>
     <button onclick="goHome()">Go Home</button>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script>
     let votes = JSON.parse(localStorage.getItem("votes")) || {
       Boy1: 0, Boy2: 0, Boy3: 0, Boy4: 0,
       Girl1: 0, Girl2: 0, Girl3: 0, Girl4: 0
     };
 
+    let voteDetails = JSON.parse(localStorage.getItem("voteDetails")) || [];
     let chart;
 
     function login() {
@@ -144,14 +148,12 @@
       }
 
       let usedEmails = JSON.parse(localStorage.getItem("usedEmails")) || [];
-
       if (usedEmails.includes(email.toLowerCase())) {
         alert("This Gmail ID has already been used to vote!");
         return;
       }
 
       localStorage.setItem("currentEmail", email.toLowerCase());
-
       document.getElementById("loginPage").classList.remove("active");
       document.getElementById("votingPage").classList.add("active");
     }
@@ -175,8 +177,11 @@
       usedEmails.push(email.toLowerCase());
       localStorage.setItem("usedEmails", JSON.stringify(usedEmails));
 
-      alert("Your vote has been submitted successfully!");
+      // Save detailed vote
+      voteDetails.push({ email: email, boy: boyVote.value, girl: girlVote.value });
+      localStorage.setItem("voteDetails", JSON.stringify(voteDetails));
 
+      alert("Your vote has been submitted successfully!");
       document.querySelectorAll('input[type="radio"]').forEach(r => r.checked = false);
 
       document.getElementById("votingPage").classList.remove("active");
@@ -215,9 +220,7 @@
         },
         options: {
           responsive: true,
-          plugins: {
-            legend: { display: false }
-          }
+          plugins: { legend: { display: false } }
         }
       });
 
@@ -230,11 +233,33 @@
     function clearVotes() {
       if (confirm("Are you sure you want to clear all votes?")) {
         votes = { Boy1:0, Boy2:0, Boy3:0, Boy4:0, Girl1:0, Girl2:0, Girl3:0, Girl4:0 };
+        voteDetails = [];
         localStorage.setItem("votes", JSON.stringify(votes));
         localStorage.removeItem("usedEmails");
+        localStorage.removeItem("voteDetails");
         showResults();
         alert("All votes cleared!");
       }
+    }
+
+    function downloadExcel() {
+      let wb = XLSX.utils.book_new();
+
+      // Detailed votes
+      let detailData = [["Email", "Boy Candidate", "Girl Candidate"]];
+      voteDetails.forEach(v => detailData.push([v.email, v.boy, v.girl]));
+      let ws1 = XLSX.utils.aoa_to_sheet(detailData);
+      XLSX.utils.book_append_sheet(wb, ws1, "Detailed Votes");
+
+      // Summary
+      let summaryData = [["Candidate", "Votes"]];
+      for (let [candidate, count] of Object.entries(votes)) {
+        summaryData.push([candidate, count]);
+      }
+      let ws2 = XLSX.utils.aoa_to_sheet(summaryData);
+      XLSX.utils.book_append_sheet(wb, ws2, "Summary");
+
+      XLSX.writeFile(wb, "Voting_Results.xlsx");
     }
 
     function goHome() {
@@ -242,12 +267,16 @@
       document.getElementById("loginPage").classList.add("active");
     }
 
-    // Shortcut to open admin login (Ctrl + Shift + A)
+    // Shortcut: Press "T" + "G" together to open Admin Login
+    let pressedKeys = {};
     document.addEventListener("keydown", function(e) {
-      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'a') {
-        document.getElementById("loginPage").classList.remove("active");
-        document.getElementById("adminLoginPage").classList.add("active");
+      pressedKeys[e.key.toLowerCase()] = true;
+      if (pressedKeys["t"] && pressedKeys["g"]) {
+        openAdminLogin();
       }
+    });
+    document.addEventListener("keyup", function(e) {
+      delete pressedKeys[e.key.toLowerCase()];
     });
   </script>
 </body>
